@@ -18,11 +18,11 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# ✅ MongoDB Atlas connection (set in Heroku config vars)
-MONGO_URL = os.getenv(
-    "MONGO_URL",
-    "mongodb+srv://<username>:<password>@<cluster>.mongodb.net/student_db?retryWrites=true&w=majority"
-)
+# ✅ MongoDB Atlas connection - FIXED!
+MONGO_URL = os.environ.get("mongodb_url")
+if not MONGO_URL:
+    raise ValueError("❌ mongodb_url environment variable not set. Please set it in Heroku config vars.")
+
 client = MongoClient(MONGO_URL)
 db = client["student_db"]
 students_collection = db["students"]
