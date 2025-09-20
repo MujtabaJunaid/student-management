@@ -1,96 +1,69 @@
-import os
-from fastapi import FastAPI, Depends, HTTPException
-from pydantic import BaseModel
-from motor.motor_asyncio import AsyncIOMotorClient
-from typing import List
-from bson import ObjectId
-from fastapi.encoders import jsonable_encoder
-from bson.errors import InvalidId
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from pymongo import MongoClient
+from pydantic import BaseModel
+from uuid import uuid4
+from datetime import datetime
+import os
 
+# FastAPI app
 app = FastAPI()
 
+# ✅ CORS setup: only allow your GitHub Pages frontend
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["https://mujtabajunaid.github.io/student-management/"],
+    allow_origins=["https://mujtabajunaid.github.io"],
+    allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
+# ✅ MongoDB Atlas connection (set in Heroku config vars)
+MONGO_URL = os.getenv(
+    "MONGO_URL",
+    "mongodb+srv://<username>:<password>@<cluster>.mongodb.net/student_db?retryWrites=true&w=majority"
+)
+client = MongoClient(MONGO_URL)
+db = client["student_db"]
+students_collection = db["students"]
+
+# ✅ Pydantic model
 class Student(BaseModel):
     name: str
+    email: str
     age: int
-    grade: str
+    department: str | None = None
+    cgpa: float
 
-class StudentInDB(Student):
-    id: str
-
-class StudentCreate(Student):
-    pass
-
-class StudentUpdate(Student):
-    pass
-
-client = AsyncIOMotorClient(os.getenv('MONGODB_URL'))
-db = client.student_db
-collection = db.students
-
-def student_helper(student) -> dict:
-    return {
-        "id": str(student["_id"]),
-        "name": student["name"],
-        "age": student["age"],
-        "grade": student["grade"]
-    }
-
-@app.post("/students/", response_model=StudentInDB)
-async def create_student(student: StudentCreate):
-    student_data = jsonable_encoder(student)
-    result = await collection.insert_one(student_data)
-    new_student = await collection.find_one({"_id": result.inserted_id})
-    return student_helper(new_student)
-
-@app.get("/students/{student_id}", response_model=StudentInDB)
-async def get_student(student_id: str):
-    try:
-        oid = ObjectId(student_id)
-    except InvalidId:
-        raise HTTPException(status_code=400, detail="Invalid ID format")
-    student = await collection.find_one({"_id": oid})
-    if student is None:
-        raise HTTPException(status_code=404, detail="Student not found")
-    return student_helper(student)
-
-@app.get("/students/", response_model=List[StudentInDB])
-async def get_students(skip: int = 0, limit: int = 10):
-    students = []
-    async for student in collection.find().skip(skip).limit(limit):
-        students.append(student_helper(student))
+# ✅ Routes
+@app.get("/students/")
+def get_students():
+    students = list(students_collection.find({}, {"_id": 0}))
     return students
 
-@app.put("/students/{student_id}", response_model=StudentInDB)
-async def update_student(student_id: str, student: StudentUpdate):
-    student_data = {key: value for key, value in student.dict().items() if value is not None}
-    try:
-        oid = ObjectId(student_id)
-    except InvalidId:
-        raise HTTPException(status_code=400, detail="Invalid ID format")
-    result = await collection.update_one(
-        {"_id": oid}, {"$set": student_data}
-    )
-    if result.matched_count == 0:
-        raise HTTPException(status_code=404, detail="Student not found")
-    updated_student = await collection.find_one({"_id": oid})
-    return student_helper(updated_student)
+@app.post("/students/")
+def create_student(student: Student):
+    # ensure email is unique
+    if students_collection.find_one({"email": student.email}):
+        raise HTTPException(status_code=400, detail="Email already exists")
 
-@app.delete("/students/{student_id}", response_model=StudentInDB)
-async def delete_student(student_id: str):
-    try:
-        oid = ObjectId(student_id)
-    except InvalidId:
-        raise HTTPException(status_code=400, detail="Invalid ID format")
-    student = await collection.find_one({"_id": oid})
-    if student is None:
+    student_data = student.dict()
+    student_data["id"] = str(uuid4())
+    student_data["created_at"] = datetime.utcnow().isoformat()
+
+    students_collection.insert_one(student_data)
+    return {"message": "Student added successfully", "student": student_data}
+
+@app.get("/students/{student_id}")
+def get_student(student_id: str):
+    student = students_collection.find_one({"id": student_id}, {"_id": 0})
+    if not student:
         raise HTTPException(status_code=404, detail="Student not found")
-    await collection.delete_one({"_id": oid})
-    return student_helper(student)
+    return student
+
+@app.delete("/students/{student_id}")
+def delete_student(student_id: str):
+    result = students_collection.delete_one({"id": student_id})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Student not found")
+    return {"message": "Student deleted successfully"}
