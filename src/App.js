@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import "./App.css";
 
-const API_URL = "https://<your-heroku-app-name>.herokuapp.com/students/";
+const API_URL = "https://student-management.herokuapp.com/students/";
 
 function App() {
   const [students, setStudents] = useState([]);
