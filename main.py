@@ -4,15 +4,12 @@ from pymongo import MongoClient
 from pydantic import BaseModel 
 from uuid import uuid4
 from datetime import datetime 
-from typing import Optional  # ✅ MOVED THIS TO TOP
+from typing import Optional
 import os
 import certifi
 
-
-# FastAPI app
 app = FastAPI()
 
-# ✅ CORS setup: only allow your GitHub Pages frontend
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["https://mujtabajunaid.github.io"],
@@ -21,24 +18,21 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# ✅ MongoDB Atlas connection - FIXED!
 MONGO_URL = os.environ.get("mongodb_url")
 if not MONGO_URL:
-    raise ValueError("❌ mongodb_url environment variable not set. Please set it in Heroku config vars.")
+    raise ValueError("mongodb_url environment variable not set. Please set it in Heroku config vars.")
 
 client = MongoClient(MONGO_URL, tlsCAFile=certifi.where())
 db = client["student_db"]
 students_collection = db["students"]
 
-# ✅ Pydantic model
 class Student(BaseModel):
     name: str
     email: str
     age: int
-    department: Optional[str] = None  # ✅ CORRECT NOW
+    department: Optional[str] = None
     cgpa: float
 
-# ✅ Routes
 @app.get("/students/")
 def get_students():
     students = list(students_collection.find({}, {"_id": 0}))
@@ -46,7 +40,6 @@ def get_students():
 
 @app.post("/students/")
 def create_student(student: Student):
-    # ensure email is unique
     if students_collection.find_one({"email": student.email}):
         raise HTTPException(status_code=400, detail="Email already exists")
 
