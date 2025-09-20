@@ -6,6 +6,8 @@ from uuid import uuid4
 from datetime import datetime 
 from typing import Optional  # ✅ MOVED THIS TO TOP
 import os
+import certifi
+
 
 # FastAPI app
 app = FastAPI()
@@ -24,7 +26,7 @@ MONGO_URL = os.environ.get("mongodb_url")
 if not MONGO_URL:
     raise ValueError("❌ mongodb_url environment variable not set. Please set it in Heroku config vars.")
 
-client = MongoClient(MONGO_URL)
+client = MongoClient(MONGO_URL, tlsCAFile=certifi.where())
 db = client["student_db"]
 students_collection = db["students"]
 
