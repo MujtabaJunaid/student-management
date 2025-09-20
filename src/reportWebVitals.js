@@ -1,13 +1,8 @@
-const reportWebVitals = onPerfEntry => {
-  if (onPerfEntry && onPerfEntry instanceof Function) {
-    import('web-vitals').then(({ getCLS, getFID, getFCP, getLCP, getTTFB }) => {
-      getCLS(onPerfEntry);
-      getFID(onPerfEntry);
-      getFCP(onPerfEntry);
-      getLCP(onPerfEntry);
-      getTTFB(onPerfEntry);
-    });
-  }
+import { reportWebVitals } from 'web-vitals';
+
+// Simply use the imported function to log metrics or send them to an analytics endpoint
+const reportWebVitalsFunction = (metric) => {
+  console.log(metric); // You can replace this with custom logic for reporting
 };
 
-export default reportWebVitals;
+reportWebVitals(reportWebVitalsFunction); // Call the imported function with the custom reporting function
