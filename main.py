@@ -4,6 +4,7 @@ from pymongo import MongoClient
 from pydantic import BaseModel 
 from uuid import uuid4
 from datetime import datetime 
+from typing import Optional  # ✅ MOVED THIS TO TOP
 import os
 
 # FastAPI app
@@ -32,7 +33,7 @@ class Student(BaseModel):
     name: str
     email: str
     age: int
-    department: str | None = None
+    department: Optional[str] = None  # ✅ CORRECT NOW
     cgpa: float
 
 # ✅ Routes
