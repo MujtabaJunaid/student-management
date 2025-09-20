@@ -1,8 +1,8 @@
 import { reportWebVitals } from 'web-vitals';
 
-// Simply use the imported function to log metrics or send them to an analytics endpoint
-const reportWebVitalsFunction = (metric) => {
-  console.log(metric); // You can replace this with custom logic for reporting
+const reportWebVitals = (metric) => {
+  console.log(metric);  // You can replace this with custom logging or analytics
 };
 
-reportWebVitals(reportWebVitalsFunction); // Call the imported function with the custom reporting function
+// Make sure to use the default export
+export default reportWebVitals;
