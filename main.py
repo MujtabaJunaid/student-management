@@ -12,7 +12,7 @@ app = FastAPI()
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=["https://mujtabajunaid.github.io/student-management/"],
     allow_methods=["*"],
     allow_headers=["*"],
 )
