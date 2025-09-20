@@ -20,16 +20,25 @@ function App() {
   };
 
   const handleCreate = async () => {
-    const response = await fetch(API_URL, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(student),
-    });
-    if (response.ok) {
-      setMessage("Student added successfully!");
-      fetchStudents();
+    try {
+      const response = await fetch(API_URL, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(student),
+      });
+
+      if (response.ok) {
+        setMessage("Student added successfully!");
+        fetchStudents();
+      } else {
+        const errorData = await response.json();
+        setMessage(`Error: ${errorData.detail || "Failed to add student."}`);
+      }
+    } catch (error) {
+      console.error("Error adding student:", error);
+      setMessage("An error occurred while adding the student.");
     }
   };
 
@@ -73,18 +82,21 @@ function App() {
           placeholder="Name"
           value={student.name}
           onChange={(e) => setStudent({ ...student, name: e.target.value })}
+          required
         />
         <input
           type="number"
           placeholder="Age"
           value={student.age}
           onChange={(e) => setStudent({ ...student, age: e.target.value })}
+          required
         />
         <input
           type="text"
           placeholder="Grade"
           value={student.grade}
           onChange={(e) => setStudent({ ...student, grade: e.target.value })}
+          required
         />
         <button onClick={editStudent ? handleUpdate : handleCreate}>
           {editStudent ? "Update" : "Add Student"}
